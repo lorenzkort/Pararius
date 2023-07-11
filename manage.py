@@ -1,5 +1,4 @@
 from datetime import datetime
-import pandas as pd
 from objects import get_pararius_objects
 from telegram import send_text
 
