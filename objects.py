@@ -10,8 +10,7 @@ def get_pararius_objects(url='', headless=False):
     # Create driver
     options = Options()
     options.headless = headless
-    driver = webdriver.Chrome('/Users/lorenzkort/.wdm/drivers/chromedriver/mac64/108.0.5359/chromedriver',
-                              options=options)
+    driver = webdriver.Chrome(options=options)
     driver.implicitly_wait(10)
 
     # Get HTML from site and quit driver
