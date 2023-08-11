@@ -2,6 +2,9 @@ import time
 from bs4 import BeautifulSoup as bs
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from pyvirtualdisplay import Display
+
+
  
 # Returns the URL's that are currently on the site
 def get_pararius_objects(url='', headless=False):
@@ -10,8 +13,9 @@ def get_pararius_objects(url='', headless=False):
     # Create driver
     options = Options()
     options.headless = headless
-    driver = webdriver.Chrome(options=options)
+    driver = webdriver.Chrome(options=options) # '/usr/lib/chromium-browser/chromedriver'
     driver.implicitly_wait(10)
+
 
     # Get HTML from site and quit driver
     driver.get(url)
