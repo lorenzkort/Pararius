@@ -1,5 +1,5 @@
 python-dotenv
-yaml
+pyyaml
 beautifulsoup4
 selenium
 telegram
