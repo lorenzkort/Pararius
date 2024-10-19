@@ -1,0 +1,8 @@
+beautifulsoup4
+selenium
+telegram
+azure-data-tables
+apscheduler
+memory_profiler
+webdriver_manager
+python-dotenv
