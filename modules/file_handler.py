@@ -2,11 +2,13 @@ from azure.data.tables import TableServiceClient, TableEntity
 from contextlib import contextmanager
 import os
 from dotenv import load_dotenv
+
 class handler():
     # Connect to your Table Storage account
     load_dotenv()
+
     azure_tables_connection_string = os.getenv('AZURE_TABLES_CONNNECTION_STRING')
-    
+
     @contextmanager
     def table_client_context(self):
         table_service_client = TableServiceClient.from_connection_string(conn_str=self.azure_tables_connection_string)

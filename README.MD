@@ -20,6 +20,7 @@ Scrapes Pararius rental objects, stores links in Azure Table Store and sends a T
 6. Create a Telegram Bot and add the token as environment variable `TELEGRAM_BOT_TOKEN` in /modules/.ENV
 7. Add the Telegram Bot to a Group chat and get the group chat ID (starts with a '-' sign)
 8. Add the Chat ID to `TELEGRAM_CHAT_ID` environment variable in /modules/.ENV
+9. Install chromium browser using `sudo apt install -y chromium-browser chromium-chromedriver`
 9. Run `python app.py`
 
 ### When using with Docker
