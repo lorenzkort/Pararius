@@ -2,7 +2,6 @@ from azure.data.tables import TableServiceClient, TableEntity
 from contextlib import contextmanager
 import os
 from dotenv import load_dotenv
-
 class handler():
     # Connect to your Table Storage account
     load_dotenv()
@@ -22,7 +21,7 @@ class handler():
         with self.table_client_context() as table_client:
             new_entity = TableEntity()
             new_entity['PartitionKey'] = 'pararius'
-            new_entity['RowKey'] = link.split('/')[-1]
+            new_entity['RowKey'] = link.split('/')[-2]
             new_entity['link'] = link
             new_entity['timestamp'] = timestamp
             table_client.create_entity(entity=new_entity)

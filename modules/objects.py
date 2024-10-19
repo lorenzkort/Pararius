@@ -146,7 +146,6 @@ def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam'):
     print("Initialising Chrome driver...")
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=chrome_options)
-    
     driver.set_page_load_timeout(10)
     
     try:
