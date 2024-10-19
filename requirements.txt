@@ -6,3 +6,4 @@ telegram
 azure-data-tables
 apscheduler
 webdriver_manager
+pre-commit
