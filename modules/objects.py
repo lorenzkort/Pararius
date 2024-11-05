@@ -1,4 +1,3 @@
-import time
 from bs4 import BeautifulSoup as bs
 import requests as r
 from selenium import webdriver
@@ -8,130 +7,176 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from contextlib import contextmanager
+import gc
 
-# Create a session object
-session = r.Session()
+@contextmanager
+def create_session():
+    session = r.Session()
+    try:
+        yield session
+    finally:
+        session.close()
 
 def get_html_content(url):
-    response = session.get(url)
-    return response.text
+    with create_session() as session:
+        response = session.get(url)
+        return response.text
 
 # Returns the URL's that are currently on the site
-def get_pararius_objects(url='https://www.pararius.com/apartments/haarlem/0-1300'):
-    print(f"Fetching URL: {url}")
-    
-    html = get_html_content(url)
-    print(f"HTML content length: {len(html)} characters")
-    
-    print("First 1000 characters of HTML:")
-    print(html[:1000])
-    
-    soup = bs(html, 'html.parser')
-    
-    # Print all unique tag names in the HTML
-    unique_tags = set([tag.name for tag in soup.find_all()])
-    print("\nUnique HTML tags found:")
-    print(", ".join(sorted(unique_tags)))
-    
-    # Print all unique class names in the HTML
-    unique_classes = set([cls for tag in soup.find_all() for cls in tag.get('class', [])])
-    print("\nUnique class names found:")
-    print(", ".join(sorted(unique_classes)))
-    
-    # Print the structure of the first few levels of the HTML
-    print("\nHTML structure (first 3 levels):")
-    def print_structure(element, level=0, max_level=3):
-        if level >= max_level:
-            return
-        print("  " * level + f"<{element.name}>")
-        for child in element.children:
-            if child.name:
-                print_structure(child, level + 1, max_level)
-    
-    print_structure(soup.html)
-    
-    # Check for any error messages or captcha
-    error_message = soup.find('div', class_='error-message')
-    if error_message:
-        print(f"Error message found: {error_message.text.strip()}")
-    
-    captcha = soup.find('div', id='captcha-container')
-    if captcha:
-        print("Captcha detected on the page")
-    
-    # Look for the main content container
-    main_content = soup.find('main', id='main')
-    if main_content:
-        print("Main content container found")
-    else:
-        print("Main content container not found")
-    
-    # Search for apartment listings
-    items = soup.find_all("a", "listing-search-item__link listing-search-item__link--title", href=True)
-    print(f"Number of apartment listings found: {len(items)}")
-    
-    # Check for other common elements
-    print("\nChecking for other common elements:")
-    common_elements = [
-        ('header', soup.find('header')),
-        ('footer', soup.find('footer')),
-        ('search form', soup.find('form', class_='search-form')),
-        ('pagination', soup.find('nav', class_='pagination'))
-    ]
-    for name, element in common_elements:
-        if element:
-            print(f"- {name.capitalize()} found")
-        else:
-            print(f"- {name.capitalize()} not found")
-    
-    parsed_items = ['https://pararius.com' + a['href'] for a in items]
-    
-    return parsed_items # Returns the URL's that are currently on the site
+def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam', batch_size=10):
+    """
+    Fetch Pararius apartment listings using batch processing to minimize memory usage.
+
+    Args:
+        url (str): The URL to scrape
+        batch_size (int): Number of items to process in each batch
+
+    Returns:
+        list: List of apartment URLs
+    """
+    print(f"Starting get_pararius_objects with URL: {url}")
+
+    # Initialize Chrome options
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--disable-software-rasterizer")
+    chrome_options.add_argument("--window-size=1920x1080")
+
+    driver = None
+    all_listings = []
+
+    try:
+        print("Initializing Chrome driver...")
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_page_load_timeout(20)
+
+        print(f"Navigating to URL: {url}")
+        driver.get(url)
+
+        # Wait for the first listing to appear
+        print("Waiting for listings to load...")
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "listing-search-item__link--title"))
+        )
+
+        # Get all listing elements
+        listing_elements = driver.find_elements(By.CLASS_NAME, "listing-search-item__link--title")
+        total_listings = len(listing_elements)
+        print(f"Found {total_listings} total listings")
+
+        # Process listings in batches
+        for batch_start in range(0, total_listings, batch_size):
+            batch_end = min(batch_start + batch_size, total_listings)
+            print(f"Processing batch {batch_start//batch_size + 1} "
+                  f"(items {batch_start + 1} to {batch_end})")
+
+            # Process current batch
+            current_batch = listing_elements[batch_start:batch_end]
+            batch_urls = []
+
+            for element in current_batch:
+                try:
+                    # Get href attribute directly without loading full element
+                    href = element.get_attribute('href')
+                    if href:
+                        full_url = ('https://pararius.com' + href) if not href.startswith('http') else href
+                        batch_urls.append(full_url)
+                except Exception as e:
+                    print(f"Error processing element: {str(e)}")
+                    continue
+
+            # Add processed batch to results
+            all_listings.extend(batch_urls)
+
+            # Print progress
+            print(f"Processed {len(batch_urls)} listings in current batch")
+            print(f"Total listings processed so far: {len(all_listings)}")
+
+            # Optional: Add a small delay between batches to prevent overloading
+            # time.sleep(0.5)
+
+        return all_listings
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return []
+
+    finally:
+        if driver:
+            print("Closing Chrome driver...")
+            try:
+                driver.quit()
+            except Exception as e:
+                print(f"Error closing driver: {str(e)}")
 
 def get_object_details(url='https://www.pararius.com/apartment-for-rent/haarlem/26f1726d/tempeliersstraat'):
     # get HTML
-    html = r.get(url).text
-    soup = bs(html, 'html.parser')
-    details = {
-        "price": '',
-        "bedrooms": 0,
-        "service_costs": 0,
-        "rental_price_services": '',
-        "surface_area": 0
-    }
-    
-    # Get data points
-    price_postfix = ''
-    if soup.find("span", "listing-detail-summary__price-postfix"):
-        price_postfix = soup.find("span", "listing-detail-summary__price-postfix").text
-    
-    if soup.find("div", "listing-detail-summary__price"):
-        details['price'] = soup.find("div", "listing-detail-summary__price").text.replace(price_postfix, '').strip().replace("€", '').replace(',','')
-    
-    if soup.find("dd", "listing-features__description listing-features__description--number_of_bedrooms"):
-        details['bedrooms'] = soup.find("dd", "listing-features__description listing-features__description--number_of_bedrooms").text.strip()
-    
-    if soup.find("dd","listing-features__description listing-features__description--service_costs"):
-        details['service_costs'] = soup.find("dd","listing-features__description listing-features__description--service_costs").text.replace("€","").strip()
-    
-    if soup.find("ul", "listing-features__sub-description"):
-        details['rental_price_services'] = soup.find("ul", "listing-features__sub-description").text.strip()
-        
-    if soup.find("li", "illustrated-features__item illustrated-features__item--surface-area"):
-        details['surface_area'] = soup.find("li", "illustrated-features__item illustrated-features__item--surface-area").text.replace("m²","")
-    
-    return details
+    with create_session() as session:
+        response = session.get(url)
+        soup = bs(response.text, 'html.parser')
+        details = {
+            "price": '',
+            "bedrooms": 0,
+            "service_costs": 0,
+            "rental_price_services": '',
+            "surface_area": 0
+        }
+
+        # Extract and process various details from the parsed HTML
+
+        # Get the price postfix (e.g., "per month")
+        price_postfix = ''
+        if soup.find("span", "listing-detail-summary__price-postfix"):
+            price_postfix = soup.find("span", "listing-detail-summary__price-postfix").text
+
+        # Extract the price, removing the postfix, euro sign, and commas
+        if soup.find("div", "listing-detail-summary__price"):
+            price_element = soup.find("div", "listing-detail-summary__price")
+            details['price'] = price_element.text.replace(price_postfix, '').strip().replace("€", '').replace(',','')
+
+        # Extract the number of bedrooms
+        if soup.find("dd", "listing-features__description listing-features__description--number_of_bedrooms"):
+            bedroom_element = soup.find("dd", "listing-features__description listing-features__description--number_of_bedrooms")
+            details['bedrooms'] = bedroom_element.text.strip()
+
+        # Extract the service costs, removing the euro sign
+        if soup.find("dd","listing-features__description listing-features__description--service_costs"):
+            service_cost_element = soup.find("dd","listing-features__description listing-features__description--service_costs")
+            details['service_costs'] = service_cost_element.text.replace("€","").strip()
+
+        # Extract additional rental price services information
+        if soup.find("ul", "listing-features__sub-description"):
+            rental_price_services_element = soup.find("ul", "listing-features__sub-description")
+            details['rental_price_services'] = rental_price_services_element.text.strip()
+
+        # Extract the surface area, removing the "m²" unit
+        if soup.find("li", "illustrated-features__item illustrated-features__item--surface-area"):
+            surface_area_element = soup.find("li", "illustrated-features__item illustrated-features__item--surface-area")
+            details['surface_area'] = surface_area_element.text.replace("m²","")
+
+        # Note: Consider adding error handling and type conversion for numeric fields
+        # For example, converting 'price', 'bedrooms', 'service_costs', and 'surface_area' to appropriate numeric types
+
+        del soup
+        gc.collect()  # Force garbage collection
+
+        return details
 
 def enrich_details(details):
-    if type(details['price']) == int and type(details['bedrooms']) == int:
-        details['price_per_bedroom'] = ( details['price'] + details['service_costs'] ) / details['bedrooms']
-        
-    if type(details['price']) == int and type(details['surface_area']) == int:
-        details['price_per_m2'] = details['price'] / details['surface_area']
-        
-    return details
+    # Calculate price per bedroom
+    if isinstance(details['price'], int) and isinstance(details['bedrooms'], int):
+        details['price_per_bedroom'] = (details['price'] + details['service_costs']) / details['bedrooms']
 
-# print(enrich_details(get_object_details()))
+    # Calculate price per square meter
+    if isinstance(details['price'], int) and isinstance(details['surface_area'], int):
+        details['price_per_m2'] = details['price'] / details['surface_area']
+
+    return details
 
 def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam'):
     print(f"Starting get_pararius_objects with URL: {url}")
@@ -142,28 +187,30 @@ def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam'):
     chrome_options.add_argument("--disable-gpu")  # Applicable to Windows and Linux
     chrome_options.add_argument("--disable-software-rasterizer")  # Prevent software rasterizer from being used
     chrome_options.add_argument("--window-size=1920x1080")  # Set a default window size
-        
-    print("Initialising Chrome driver...")
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
-    driver.set_page_load_timeout(10)
-    
+
+    driver = None
+
     try:
+        print("Initialising Chrome driver...")
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_page_load_timeout(10)
+
         print(f"Navigating to URL: {url}")
         driver.get(url)
-        
+
         print("Waiting for page to load...")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, "listing-search-item__link--title"))
         )
-        
+
         print("Page loaded. Parsing HTML...")
         html = driver.page_source
         soup = bs(html, 'html.parser')
-        
+
         items = soup.find_all("a", "listing-search-item__link listing-search-item__link--title", href=True)
         parsed_items = ['https://pararius.com' + a['href'] for a in items]
-        
+
         print(f"Found {len(parsed_items)} items.")
         return parsed_items
     except Exception as e:
@@ -187,7 +234,3 @@ if __name__ == "__main__":
             print(url)
     else:
         print("No results found.")
-
-# Add this function at the end of the file
-def cleanup():
-    session.close()
