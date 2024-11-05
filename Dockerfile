@@ -1,25 +1,28 @@
-FROM mcr.microsoft.com/azure-functions/python:4-python3.12
+# Use slim Python image as base
+FROM python:3.11-slim
 
-# 1. Install essential packages
-RUN apt-get update \
-    && apt-get install -y \
-        wget \
-        sudo
-RUN wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-RUN sudo apt-get install -y ./google-chrome-stable_current_amd64.deb
+# Install Chrome dependencies and Chrome browser
+RUN apt-get update && apt-get install -y \
+    wget \
+    gnupg2 \
+    apt-transport-https \
+    ca-certificates \
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-# 2. Install Chrome driver used by Selenium
-RUN pip3 install selenium
-RUN pip3 install webdriver-manager
+# Create and set working directory
+WORKDIR /app
 
-# 3. Copy python code to image
-COPY . /home/site/wwwroot
+# Copy requirements and install Python dependencies (if any)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# 4. Set the working directory
-WORKDIR /home/site/wwwroot
+# Copy your application code
+COPY . .
 
-# 5. Install other packages in requirements.txt
-RUN pip install -r requirements.txt
-
-# 6. Start the application
+# Command to run your Python app
 CMD ["python", "app.py"]

@@ -8,7 +8,6 @@ import gc
 from contextlib import contextmanager
 from typing import List, Dict, Any
 import time
-import os
 
 @contextmanager
 def file_handler_context(azure_table_connection_string: str = ''):

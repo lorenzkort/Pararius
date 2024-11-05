@@ -9,6 +9,8 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from contextlib import contextmanager
 import gc
+import os
+import logging
 
 @contextmanager
 def create_session():
@@ -23,6 +25,49 @@ def get_html_content(url):
         response = session.get(url)
         return response.text
 
+def setup_chrome_options():
+    """Configure Chrome options for running in Docker container"""
+    chrome_options = Options()
+
+    # Essential options for running Chrome in Docker
+    chrome_options.add_argument('--headless=new')
+    chrome_options.add_argument('--no-sandbox')
+    chrome_options.add_argument('--disable-dev-shm-usage')
+    chrome_options.add_argument('--disable-gpu')
+
+    # Additional stability options
+    chrome_options.add_argument('--window-size=1920,1080')
+    chrome_options.add_argument('--start-maximized')
+    chrome_options.add_argument('--disable-extensions')
+    chrome_options.add_argument('--dns-prefetch-disable')
+
+    # Set user agent
+    chrome_options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+
+    return chrome_options
+
+def create_driver():
+    """Create and configure Chrome WebDriver"""
+    try:
+        chrome_options = setup_chrome_options()
+
+        # Use the Chrome binary from the Docker container
+        chrome_binary_path = '/usr/bin/chromium'
+        if os.path.exists(chrome_binary_path):
+            chrome_options.binary_location = chrome_binary_path
+
+        # Use the ChromeDriver from the Docker container
+        chromedriver_path = '/usr/bin/chromedriver'
+        service = Service(executable_path=chromedriver_path)
+
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        driver.set_page_load_timeout(30)
+        return driver
+
+    except Exception as e:
+        logging.error(f"Failed to create Chrome driver: {str(e)}")
+        raise
+
 # Returns the URL's that are currently on the site
 def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam', batch_size=10):
     """
@@ -35,31 +80,21 @@ def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam', ba
     Returns:
         list: List of apartment URLs
     """
-    print(f"Starting get_pararius_objects with URL: {url}")
-
-    # Initialize Chrome options
-    chrome_options = Options()
-    chrome_options.add_argument("--headless")
-    chrome_options.add_argument("--no-sandbox")
-    chrome_options.add_argument("--disable-dev-shm-usage")
-    chrome_options.add_argument("--disable-gpu")
-    chrome_options.add_argument("--disable-software-rasterizer")
-    chrome_options.add_argument("--window-size=1920x1080")
+    logging.info(f"Starting get_pararius_objects with URL: {url}")
 
     driver = None
     all_listings = []
 
     try:
-        print("Initializing Chrome driver...")
-        service = Service(ChromeDriverManager().install())
-        driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.set_page_load_timeout(20)
+        logging.info("Initializing Chrome driver...")
+        driver = driver = create_driver()
+        logging.info("Chrome driver created successfully")
 
-        print(f"Navigating to URL: {url}")
+        logging.info(f"Navigating to URL: {url}")
         driver.get(url)
 
         # Wait for the first listing to appear
-        print("Waiting for listings to load...")
+        logging.info("Waiting for listings to load...")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, "listing-search-item__link--title"))
         )
@@ -67,12 +102,12 @@ def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam', ba
         # Get all listing elements
         listing_elements = driver.find_elements(By.CLASS_NAME, "listing-search-item__link--title")
         total_listings = len(listing_elements)
-        print(f"Found {total_listings} total listings")
+        logging.info(f"Found {total_listings} total listings")
 
         # Process listings in batches
         for batch_start in range(0, total_listings, batch_size):
             batch_end = min(batch_start + batch_size, total_listings)
-            print(f"Processing batch {batch_start//batch_size + 1} "
+            logging.info(f"Processing batch {batch_start//batch_size + 1} "
                   f"(items {batch_start + 1} to {batch_end})")
 
             # Process current batch
@@ -87,15 +122,15 @@ def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam', ba
                         full_url = ('https://pararius.com' + href) if not href.startswith('http') else href
                         batch_urls.append(full_url)
                 except Exception as e:
-                    print(f"Error processing element: {str(e)}")
+                    logging.info(f"Error processing element: {str(e)}")
                     continue
 
             # Add processed batch to results
             all_listings.extend(batch_urls)
 
             # Print progress
-            print(f"Processed {len(batch_urls)} listings in current batch")
-            print(f"Total listings processed so far: {len(all_listings)}")
+            logging.info(f"Processed {len(batch_urls)} listings in current batch")
+            logging.info(f"Total listings processed so far: {len(all_listings)}")
 
             # Optional: Add a small delay between batches to prevent overloading
             # time.sleep(0.5)
@@ -103,16 +138,16 @@ def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam', ba
         return all_listings
 
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        logging.info(f"An error occurred: {str(e)}")
         return []
 
     finally:
         if driver:
-            print("Closing Chrome driver...")
+            logging.info("Closing Chrome driver...")
             try:
                 driver.quit()
             except Exception as e:
-                print(f"Error closing driver: {str(e)}")
+                logging.info(f"Error closing driver: {str(e)}")
 
 def get_object_details(url='https://www.pararius.com/apartment-for-rent/haarlem/26f1726d/tempeliersstraat'):
     # get HTML
@@ -196,32 +231,32 @@ def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam'):
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.set_page_load_timeout(10)
 
-        print(f"Navigating to URL: {url}")
+        logging.info(f"Navigating to URL: {url}")
         driver.get(url)
 
-        print("Waiting for page to load...")
+        logging.info("Waiting for page to load...")
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.CLASS_NAME, "listing-search-item__link--title"))
         )
 
-        print("Page loaded. Parsing HTML...")
+        logging.info("Page loaded. Parsing HTML...")
         html = driver.page_source
         soup = bs(html, 'html.parser')
 
         items = soup.find_all("a", "listing-search-item__link listing-search-item__link--title", href=True)
         parsed_items = ['https://pararius.com' + a['href'] for a in items]
 
-        print(f"Found {len(parsed_items)} items.")
+        logging.info(f"Found {len(parsed_items)} items.")
         return parsed_items
     except Exception as e:
-        print(f"An error occurred: {str(e)}")
+        logging.info(f"An error occurred: {str(e)}")
         return []
     finally:
-        print("Closing Chrome driver...")
+        logging.info("Closing Chrome driver...")
         try:
             driver.quit()
         except Exception as e:
-            print(f"Error closing driver: {str(e)}")
+            logging.info(f"Error closing driver: {str(e)}")
 
 # Test the function
 if __name__ == "__main__":

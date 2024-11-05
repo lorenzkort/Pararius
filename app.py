@@ -16,6 +16,51 @@ from collections import deque
 from dataclasses import dataclass
 import json
 
+def verify_environment():
+    """Verify all required environment variables are set"""
+    required_vars = {
+        'AZURE_TABLES_CONNECTION_STRING': 'Azure Tables connection string',
+        'TELEGRAM_BOT_TOKEN': 'Telegram bot token',
+        'TELEGRAM_CHAT_ID': 'Telegram chat ID'
+    }
+
+    missing = []
+    for var, description in required_vars.items():
+        value = os.getenv(var)
+        if not value:
+            missing.append(f"{var} ({description})")
+        else:
+            # Log masked version of sensitive values
+            masked = value[:4] + '*' * (len(value) - 8) + value[-4:] if len(value) > 8 else '****'
+            logging.info(f"Found {var}: {masked}")
+
+    if missing:
+        raise EnvironmentError(
+            "Missing required environment variables:\n" +
+            "\n".join(f"- {var}" for var in missing)
+        )
+
+def verify_driver_setup():
+    """
+    Verify Chrome and ChromeDriver setup
+    """
+    logging.info("Verifying Chrome setup...")
+
+    # Check Chrome binary
+    chrome_path = '/usr/bin/chromium'
+    if os.path.exists(chrome_path):
+        logging.info(f"Chrome binary found at {chrome_path}")
+    else:
+        logging.error(f"Chrome binary not found at {chrome_path}")
+
+    # Check ChromeDriver
+    chromedriver_path = '/usr/bin/chromedriver'
+    if os.path.exists(chromedriver_path):
+        logging.info(f"ChromeDriver found at {chromedriver_path}")
+    else:
+        logging.error(f"ChromeDriver not found at {chromedriver_path}")
+
+
 @dataclass
 class JobMetrics:
     """Stores metrics for a single job run"""
@@ -133,7 +178,7 @@ class SchedulerManager:
         self.scheduler = BlockingScheduler()
         self.bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
         self.chat_id = os.getenv('TELEGRAM_CHAT_ID')
-        self.azure_table_connection_string = os.getenv('AZURE_TABLES_CONNNECTION_STRING')
+        self.azure_table_connection_string = os.getenv('AZURE_TABLES_CONNECTION_STRING')
         self.job_stats = JobStats(maxlen=100)
 
         # Set up signal handlers
@@ -272,13 +317,28 @@ def main():
             logging.FileHandler('scheduler.log')
         ]
     )
+    try:
+        # Load environment variables
+        load_dotenv()
 
-    # Load environment variables
-    load_dotenv()
+        # Verify environment
+        logging.info("Verifying environment variables...")
+        verify_environment()
 
-    # Run scheduler with context manager
-    with create_scheduler() as scheduler:
-        scheduler.start()
+        # Verify driver setup
+        logging.info("Verifying chrome driver setup...")
+        verify_driver_setup()
+
+        # Run scheduler with context manager
+        with create_scheduler() as scheduler:
+            scheduler.start()
+
+    except EnvironmentError as e:
+        logging.error(f"Environment configuration error: {e}")
+        exit(1)
+    except Exception as e:
+        logging.error(f"Startup error: {e}")
+        exit(1)
 
 if __name__ == "__main__":
     main()
