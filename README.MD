@@ -32,3 +32,16 @@ Scrapes Pararius rental objects, stores links in Azure Table Store and sends a T
 6. Add the Chat ID to `TELEGRAM_CHAT_ID` environment variable in /modules/.ENV
 7. `docker built -t pararius:latest .`
 8. `docker run pararius:latest`
+
+# TODO
+* Write documentation about pre-commit hooks
+* Add interval in minutes to config.yml
+* Change .env-config to config.yml
+* Include environment-values in ACI using Azure KeyVault for example
+* Ensure logging in every file is done correctly (also in main-example code snippet at the end of the file)
+* Include tests
+* Create CI/CD-process & think about OTAP-street for application (higher interval in OTA and lower in P (?) )
+* Check if line 8 in __init__.py can be removed
+* Surpress Response Header logging for Azure Tables Requests
+
+* Update documentation

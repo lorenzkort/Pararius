@@ -1,11 +1,8 @@
 from azure.data.tables import TableServiceClient, TableEntity
 from contextlib import contextmanager
-import os
-from dotenv import load_dotenv
 import logging
-from typing import List, Dict, Any, Generator, Optional
+from typing import Dict, Any, Generator, Optional
 import gc
-from datetime import datetime
 
 class AzureTableHandler:
     """Handles Azure Table Storage operations with proper resource management"""

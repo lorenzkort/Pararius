@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import logging
 import gc
 from contextlib import contextmanager
-from typing import List, Dict, Any
+from typing import List, Any
 import time
 
 @contextmanager
@@ -121,7 +121,7 @@ def cronjob(city: str = 'haarlem',
         # Cleanup and force garbage collection
         gc.collect()
 
+# Example usage with logging configuration
 if __name__ == "__main__":
-    # Example usage with logging configuration
     logging.basicConfig(level=logging.INFO)
     cronjob(batch_size=3)  # Process 3 properties at a time

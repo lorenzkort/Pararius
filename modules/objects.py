@@ -258,7 +258,7 @@ def get_pararius_objects(url='https://www.pararius.com/apartments/amsterdam'):
         except Exception as e:
             logging.info(f"Error closing driver: {str(e)}")
 
-# Test the function
+# Example usage
 if __name__ == "__main__":
     print("Starting main execution...")
     results = get_pararius_objects()
