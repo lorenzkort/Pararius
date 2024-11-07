@@ -58,7 +58,7 @@ def process_property_batch(links: List[str],
 
 def cronjob(city: str = 'haarlem',
             minimum_bedrooms: str = '1',
-            max_price_eur: str = '1500',
+            max_price_in_euros: str = '1500',
             km_radius: str = '10',
             bot_token: str = '',
             chat_id: str = '',
@@ -68,7 +68,7 @@ def cronjob(city: str = 'haarlem',
     Optimized cronjob function with better memory management and error handling
     """
     logging.info(f"Starting cronjob with parameters: city={city}, "
-                f"minimum_bedrooms={minimum_bedrooms}, max_price_eur={max_price_eur}, "
+                f"minimum_bedrooms={minimum_bedrooms}, max_price_in_euros={max_price_in_euros}, "
                 f"km_radius={km_radius}")
 
     try:
@@ -76,7 +76,7 @@ def cronjob(city: str = 'haarlem',
         url_params = {
             'city': f"/{city}" if city else '',
             'bedrooms': f"/{minimum_bedrooms}-bedrooms" if minimum_bedrooms else '',
-            'price': f"/0-{int(max_price_eur)}" if int(max_price_eur) > 0 else '',
+            'price': f"/0-{int(max_price_in_euros)}" if int(max_price_in_euros) > 0 else '',
             'radius': f"/radius-{km_radius}" if km_radius else ''
         }
 

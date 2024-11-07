@@ -135,8 +135,9 @@ class ConfigValidator:
         required_fields = {
             'city': str,
             'minimum_bedrooms': (int, float, str),
-            'max_price_eur': (int, float, str),
-            'km_radius': (int, float, str)
+            'max_price_in_euros': (int, float),
+            'km_radius': (int, float),
+            'scrape_interval_in_minutes': (int, float)
         }
 
         try:
@@ -159,7 +160,7 @@ class ConfigValidator:
             if float(config['minimum_bedrooms']) <= 0:
                 raise ValueError("Minimum bedrooms must be greater than 0")
 
-            if float(config['max_price_eur']) <= 0:
+            if float(config['max_price_in_euros']) <= 0:
                 raise ValueError("Maximum price must be greater than 0")
 
             if float(config['km_radius']) < 0:
@@ -168,8 +169,8 @@ class ConfigValidator:
             return True
 
         except Exception as e:
-            logging.error(f"Config validation error: {str(e)} -> {e.__cause__}")
-            raise ValueError(f"Invalid configuration: {str(e)} -> {e.__cause__}")
+            logging.error(f"Config validation error: {str(e)}")
+            raise ValueError(f"Invalid configuration: {str(e)}")
 
 class SchedulerManager:
     """Manages the APScheduler with proper cleanup"""
@@ -202,7 +203,7 @@ class SchedulerManager:
             job_context = {
                 'city': config["city"].lower(),
                 'minimum_bedrooms': str(config["minimum_bedrooms"]),
-                'max_price_eur': str(config["max_price_eur"]),
+                'max_price_in_euros': str(config["max_price_in_euros"]),
                 'km_radius': str(config["km_radius"]),
                 'bot_token': self.bot_token,
                 'chat_id': self.chat_id,
@@ -231,6 +232,12 @@ class SchedulerManager:
     def start(self) -> None:
         """Start the scheduler with proper error handling"""
         try:
+            # Read config
+            config = self.config_manager.get_config()
+
+            # Validate config before running
+            ConfigValidator.validate_config(config)
+
             # Initial job run
             self.run_job()
             time.sleep(20)
@@ -239,7 +246,7 @@ class SchedulerManager:
             self.scheduler.add_job(
                 self.run_job,
                 'interval',
-                minutes=1,
+                minutes=config["scrape_interval_in_minutes"],
                 max_instances=1,  # Prevent job overlapping
                 coalesce=True     # Combine missed runs
             )
@@ -249,7 +256,7 @@ class SchedulerManager:
         except (KeyboardInterrupt, SystemExit):
             self._shutdown()
         except Exception as e:
-            logging.error(f"Scheduler error: {e} -> {e.__cause__}")
+            logging.error(f"Scheduler error: {e}")
             self._shutdown()
 
     def _cleanup(self) -> None:
@@ -273,7 +280,7 @@ class SchedulerManager:
             self._cleanup()
             logging.info("Shutdown completed successfully.")
         except Exception as e:
-            logging.error(f"Error during shutdown: {e} -> {e.__cause__}")
+            logging.error(f"Error during shutdown: {e}")
         finally:
             exit(0)
 
@@ -291,7 +298,7 @@ class ConfigManager:
             # Validate config on load
             ConfigValidator.validate_config(self.config)
         except Exception as e:
-            logging.error(f"Error loading config: {e} -> {e.__cause__}")
+            logging.error(f"Error loading config: {e}")
             raise
 
     def get_config(self) -> Dict[str, Any]:

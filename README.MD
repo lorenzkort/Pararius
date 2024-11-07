@@ -21,20 +21,20 @@ Scrapes Pararius rental objects, stores links in Azure Table Store and sends a T
 7. Add the Telegram Bot to a Group chat and get the group chat ID (starts with a '-' sign)
 8. Add the Chat ID to `TELEGRAM_CHAT_ID` environment variable in /modules/.ENV
 9. Install chromium browser using `sudo apt install -y chromium-browser chromium-chromedriver`
-9. Run `python app.py`
+9. Run in command line: `python app.py`
 
 ### When using with Docker
+0. Install Docker
 1. Change modules/.ENV-example to modules/.ENV
 2. Edit modules/config.yml to your likening (based on pararius.com)
 3. Create an Azure Table Store and add the connection string as environment variable `AZURE_TABLES_CONNECTION_STRING` in /modules/.ENV
 4. Create a Telegram Bot and add the token as environment variable `TELEGRAM_BOT_TOKEN` in /modules/.ENV
 5. Add the Telegram Bot to a Group chat and get the group chat ID (starts with a '-' sign). Find it using https://api.telegram.org/bot<YourBOTToken>/getUpdates
 6. Add the Chat ID to `TELEGRAM_CHAT_ID` environment variable in /modules/.ENV
-7. `docker built -t pararius:latest .`
-8. `docker run pararius:latest`
+7. Run in command line: `docker built -t pararius:latest .`
+8. Run in command line: `docker run pararius:latest`
 
 # TODO
-* Write documentation about pre-commit hooks
 * Add interval in minutes to config.yml
 * Change .env-config to config.yml
 * Include environment-values in ACI using Azure KeyVault for example
@@ -45,3 +45,4 @@ Scrapes Pararius rental objects, stores links in Azure Table Store and sends a T
 * Surpress Response Header logging for Azure Tables Requests
 
 * Update documentation
+* Write documentation about pre-commit hooks

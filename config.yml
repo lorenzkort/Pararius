@@ -1,4 +1,8 @@
+# Search Configuration
 city: haarlem
 km_radius: 15
-max_price_eur: 1500
+max_price_in_euros: 1500
 minimum_bedrooms: 1
+
+# Application Configuration
+scrape_interval_in_minutes: 1
