@@ -1,7 +1,7 @@
 from datetime import datetime
 from .objects import get_pararius_objects, get_object_details, enrich_details
 from .telegram import send_text
-from .file_handler import AzureTableHandler
+from .table_handler import AzureTableHandler
 from dotenv import load_dotenv
 import logging
 import gc
@@ -10,18 +10,18 @@ from typing import List, Any
 import time
 
 @contextmanager
-def file_handler_context(azure_table_connection_string: str = ''):
+def table_handler_context(azure_table_connection_string: str = ''):
     """Context manager for file handler to ensure proper cleanup"""
     load_dotenv()
-    file_handler_instance = AzureTableHandler(azure_table_connection_string)
+    table_handler_instance = AzureTableHandler(azure_table_connection_string)
     try:
-        yield file_handler_instance
+        yield table_handler_instance
     finally:
         # Add cleanup
-        file_handler_instance.cleanup()
+        table_handler_instance.cleanup()
 
 def process_property_batch(links: List[str],
-                         file_handler_instance: Any,
+                         table_handler_instance: Any,
                          bot_token: str,
                          chat_id: str,
                          batch_size: int = 5) -> None:
@@ -33,7 +33,7 @@ def process_property_batch(links: List[str],
             try:
                 # Process timestamp and storage
                 timestamp = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-                file_handler_instance.insert_row_to_table(link, timestamp)
+                table_handler_instance.insert_row_to_table(link, timestamp)
 
                 # Get and process details
                 details = get_object_details(link)
@@ -92,10 +92,10 @@ def cronjob(city: str = 'haarlem',
         logging.info(f"Retrieved {len(fresh_objects)} objects")
 
         # Use context manager for file handler
-        with file_handler_context(azure_table_connection_string) as file_handler_instance:
+        with table_handler_context(azure_table_connection_string) as table_handler_instance:
             # Query known links
             known_links = set(entity['link'] for entity in
-                            file_handler_instance.query_entities("PartitionKey eq 'pararius'"))
+                            table_handler_instance.query_entities("PartitionKey eq 'pararius'"))
 
             # Find new objects
             unknown_objects = list(set(fresh_objects) - known_links)
@@ -105,7 +105,7 @@ def cronjob(city: str = 'haarlem',
                 # Process properties in batches
                 process_property_batch(
                     links=unknown_objects,
-                    file_handler_instance=file_handler_instance,
+                    table_handler_instance=table_handler_instance,
                     bot_token=bot_token,
                     chat_id=chat_id,
                     batch_size=batch_size

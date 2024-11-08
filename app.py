@@ -40,27 +40,6 @@ def verify_environment():
             "\n".join(f"- {var}" for var in missing)
         )
 
-def verify_driver_setup():
-    """
-    Verify Chrome and ChromeDriver setup
-    """
-    logging.info("Verifying Chrome setup...")
-
-    # Check Chrome binary
-    chrome_path = '/usr/bin/chromium'
-    if os.path.exists(chrome_path):
-        logging.info(f"Chrome binary found at {chrome_path}")
-    else:
-        logging.error(f"Chrome binary not found at {chrome_path}")
-
-    # Check ChromeDriver
-    chromedriver_path = '/usr/bin/chromedriver'
-    if os.path.exists(chromedriver_path):
-        logging.info(f"ChromeDriver found at {chromedriver_path}")
-    else:
-        logging.error(f"ChromeDriver not found at {chromedriver_path}")
-
-
 @dataclass
 class JobMetrics:
     """Stores metrics for a single job run"""
@@ -238,9 +217,11 @@ class SchedulerManager:
             # Validate config before running
             ConfigValidator.validate_config(config)
 
+            logging.info(f"Scraping pararius every {config['scrape_interval_in_minutes']} minute")
+
             # Initial job run
             self.run_job()
-            time.sleep(20)
+            time.sleep(10)
 
             # Schedule recurring job
             self.scheduler.add_job(
@@ -331,10 +312,6 @@ def main():
         # Verify environment
         logging.info("Verifying environment variables...")
         verify_environment()
-
-        # Verify driver setup
-        logging.info("Verifying chrome driver setup...")
-        verify_driver_setup()
 
         # Run scheduler with context manager
         with create_scheduler() as scheduler:

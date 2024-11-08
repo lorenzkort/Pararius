@@ -1,7 +1,6 @@
-version: '3.8'
-
 services:
   scraper:
+    platform: linux/arm64
     image: ${ACR_URL}/${IMAGE_NAME}:${IMAGE_TAG}
     env_file:
       - .env

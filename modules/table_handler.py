@@ -1,8 +1,15 @@
+import logging
 from azure.data.tables import TableServiceClient, TableEntity
 from contextlib import contextmanager
-import logging
 from typing import Dict, Any, Generator, Optional
 import gc
+
+# Suppress only azure.core.pipeline.policies.http_logging_policy
+logging.getLogger('azure.core.pipeline.policies.http_logging_policy').setLevel(logging.WARNING)
+
+# OR suppress all azure-related logging
+logging.getLogger('azure').setLevel(logging.WARNING)
+
 
 class AzureTableHandler:
     """Handles Azure Table Storage operations with proper resource management"""

@@ -1,21 +1,20 @@
 # Use slim Python image as base
 FROM python:3.11-slim
 
-# Install Chrome dependencies and Chrome browser
-RUN apt-get update && apt-get install -y \
-    wget \
-    gnupg2 \
-    apt-transport-https \
-    ca-certificates \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
 # Create and set working directory
 WORKDIR /app
+
+# Install chromium and chromium-driver
+RUN apt-get update && apt-get install -y \
+    chromium \
+    chromium-driver \
+    # Required dependencies
+    libnss3 \
+    libgconf-2-4 \
+    libfontconfig1 \
+    # Clean up to reduce image size
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements and install Python dependencies (if any)
 COPY requirements.txt .
