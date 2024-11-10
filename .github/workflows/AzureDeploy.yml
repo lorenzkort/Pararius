@@ -1,0 +1,102 @@
+name: Python Application CI/CD
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0  # Required for pre-commit checks
+
+    # Load the entire config file
+    - name: Load full config
+      id: config
+      uses: jbutcher5/read-yaml@main
+      with:
+        file: './config.yaml'
+
+    - name: Show loaded configurations
+      run: |
+        # Accessing nested values using the full config
+        echo "Registry URL: ${{ fromJson(steps.config.outputs.data).azure.container_registry }}"
+        echo "App Resource Group: ${{ fromJson(steps.config.outputs.data).azure.resource_group }}"
+        echo "ACR Container Name: ${{ fromJson(steps.config.outputs.data).azure.container_name }}"
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.11'
+
+    - name: Install pre-commit
+      run: |
+        python -m pip install --upgrade pip
+        pip install pre-commit
+        pre-commit install
+
+    - name: Run pre-commit hooks
+      run: pre-commit run --all-files
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Azure Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ fromJson(steps.config.outputs.data).azure.container_registry }}
+        username: ${{ secrets.AZURE_CLIENT_ID }}
+        password: ${{ secrets.AZURE_CLIENT_SECRET }}
+
+    - name: Build with docker-compose
+      run: |
+        docker-compose build
+
+    - name: Run tests in container
+      run: |
+        docker-compose run --rm app pytest tests/ --cov=./ --cov-report=xml
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+
+    - name: Tag and push Docker image
+      run: |
+        # Get the image name from docker-compose
+        IMAGE_NAME=$(docker-compose config | grep 'image:' | awk '{print $2}')
+
+        # Tag with Azure registry and commit SHA
+        docker tag $IMAGE_NAME ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:${{ github.sha }}
+        docker tag $IMAGE_NAME ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:latest
+
+        # Push both tags
+        docker push ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:${{ github.sha }}
+        docker push ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:latest
+
+  deploy:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # Only deploy on main branch
+
+    steps:
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy to Azure Container Instances
+      uses: azure/aci-deploy@v1
+      with:
+        resource-group: ${{ fromJson(steps.config.outputs.data).azure.resource_group }}
+        dns-name-label: ${{ fromJson(steps.config.outputs.data).azure.container_instance_name }}
+        image: ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:${{ github.sha }}
+        registry-username: ${{ secrets.AZURE_CLIENT_ID }}
+        registry-password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        name: ${{ fromJson(steps.config.outputs.data).azure.container_instance_name }}
+        location: 'eastus'

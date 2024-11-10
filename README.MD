@@ -35,8 +35,6 @@ Scrapes Pararius rental objects, stores links in Azure Table Store and sends a T
 8. Run in command line: `docker run pararius:latest`
 
 # TODO
-* Add interval in minutes to config.yml
-* Change .env-config to config.yml
 * Include environment-values in ACI using Azure KeyVault for example
 * Ensure logging in every file is done correctly (also in main-example code snippet at the end of the file)
 * Include tests
