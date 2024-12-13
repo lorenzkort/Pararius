@@ -1,6 +1,6 @@
 .cache_ggshield
 .DS_Store
-config.yaml
+config.yml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
