@@ -20,7 +20,7 @@ jobs:
       id: config
       uses: jbutcher5/read-yaml@main
       with:
-        file: './config.yml'
+        file: './config.yaml'
 
     - name: Show loaded configurations
       run: |
