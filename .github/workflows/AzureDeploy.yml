@@ -25,7 +25,7 @@ jobs:
     - name: Debug YAML file content
       run: |
         echo "Raw YAML Output: ${{ steps.config.outputs }}"
-        echo "Raw YAML Output 2: ${{ steps.config.outputs.azure_container_registry }}"
+        echo "Raw YAML Output 2: ${{ steps.config.outputs['azure_container_registry'] }}"
 
     - name: show config
       run: echo "config data -> ${{ steps.config.outputs }}"

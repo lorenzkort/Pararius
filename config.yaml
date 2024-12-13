@@ -1,12 +1,8 @@
-
 city: haarlem
 km_radius: 15
 max_price_in_euros: 1500
 minimum_bedrooms: 1
-
 scrape_interval_in_minutes: 0.5
-
-
 azure_container_registry: "parariusregistry.azurecr.io"
 azure_resource_group: "pararius"
 azure_container_name: "parariuscontainer"
