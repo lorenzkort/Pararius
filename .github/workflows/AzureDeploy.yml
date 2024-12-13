@@ -23,7 +23,7 @@ jobs:
         file: './config.yaml'
 
     - name: show config
-      run: ${{ fromJson(steps.config.outputs.data) }}
+      run: ${{ steps.config.outputs.data }}
 
     - name: Show loaded configurations
       run: |
