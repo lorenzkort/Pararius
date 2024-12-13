@@ -15,15 +15,17 @@ jobs:
       with:
         fetch-depth: 0  # Required for pre-commit checks
 
-    - name: Debug YAML file content
-      run: cat ./config.yaml
-
     # Load the entire config file
     - name: Load full config
       id: config
       uses: pietrobolcato/action-read-yaml@1.1.0
       with:
         file: './config.yaml'
+
+    - name: Debug YAML file content
+      run: |
+        echo "Raw YAML Output: ${{ steps.config.outputs }}"
+        echo "Raw YAML Output 2: ${{ steps.config.outputs.azure_container_registry }}"
 
     - name: show config
       run: echo "config data -> ${{ steps.config.outputs }}"
