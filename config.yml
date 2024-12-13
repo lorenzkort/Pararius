@@ -1,5 +1,13 @@
+# Search Configuration
 city: haarlem
-minimum_bedrooms: 1
+km_radius: 15
 max_price_in_euros: 1500
-km_radius: 10
-scrape_interval_in_minutes: 5
+minimum_bedrooms: 1
+
+# Application Configuration
+scrape_interval_in_minutes: 0.5
+
+# Deployment Configuration
+azure_container_registry: <registry_name>.azurecr.io
+azure_resource_group: <resource_group_name>
+azure_container_name: <container_name>

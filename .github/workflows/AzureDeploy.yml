@@ -25,9 +25,9 @@ jobs:
     - name: Show loaded configurations
       run: |
         # Accessing nested values using the full config
-        echo "Registry URL: ${{ fromJson(steps.config.outputs.data).azure.container_registry }}"
-        echo "App Resource Group: ${{ fromJson(steps.config.outputs.data).azure.resource_group }}"
-        echo "ACR Container Name: ${{ fromJson(steps.config.outputs.data).azure.container_name }}"
+        echo "Registry URL: ${{ fromJson(steps.config.outputs.data).azure_container_registry }}"
+        echo "App Resource Group: ${{ fromJson(steps.config.outputs.data).azure_resource_group }}"
+        echo "ACR Container Name: ${{ fromJson(steps.config.outputs.data).azure_container_name }}"
 
     - name: Set up Python
       uses: actions/setup-python@v3
