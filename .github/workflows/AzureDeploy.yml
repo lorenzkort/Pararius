@@ -50,8 +50,8 @@ jobs:
       uses: docker/login-action@v2
       with:
         registry: ${{ steps.config.outputs['azure_container_registry'] }}
-        username: ${{ secrets.AZURE_CLIENT_ID }}
-        password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        username: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
+        password: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_SECRET_ID }}
 
     - name: Build with docker-compose
       run: |
