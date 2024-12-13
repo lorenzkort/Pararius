@@ -22,20 +22,12 @@ jobs:
       with:
         config: './config.yaml'
 
-    - name: Debug YAML file content
-      run: |
-        echo "Raw YAML Output: ${{ steps.config.outputs }}"
-        echo "Raw YAML Output 2: ${{ steps.config.outputs['azure_container_registry'] }}"
-
-    - name: show config
-      run: echo "config data -> ${{ steps.config.outputs }}"
-
     - name: Show loaded configurations
       run: |
         # Accessing nested values using the full config
-        echo "Registry URL: ${{ fromJson(steps.config.outputs.data).azure_container_registry }}"
-        echo "App Resource Group: ${{ fromJson(steps.config.outputs.data).azure_resource_group }}"
-        echo "ACR Container Name: ${{ fromJson(steps.config.outputs.data).azure_container_name }}"
+        echo "Registry URL: ${{ steps.config.outputs['azure_container_registry'] }}"
+        echo "App Resource Group: ${{ steps.config.outputs.data['azure_resource_group'] }}"
+        echo "ACR Container Name: ${{ steps.config.outputs.data['azure_container_name'] }}"
 
     - name: Set up Python
       uses: actions/setup-python@v3
@@ -57,7 +49,7 @@ jobs:
     - name: Login to Azure Container Registry
       uses: docker/login-action@v2
       with:
-        registry: ${{ fromJson(steps.config.outputs.data).azure.container_registry }}
+        registry: ${{ steps.config.outputs['azure_container_registry'] }}
         username: ${{ secrets.AZURE_CLIENT_ID }}
         password: ${{ secrets.AZURE_CLIENT_SECRET }}
 
@@ -79,32 +71,32 @@ jobs:
         # Get the image name from docker-compose
         IMAGE_NAME=$(docker-compose config | grep 'image:' | awk '{print $2}')
 
-        # Tag with Azure registry and commit SHA
-        docker tag $IMAGE_NAME ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:${{ github.sha }}
-        docker tag $IMAGE_NAME ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:latest
+  #       # Tag with Azure registry and commit SHA
+  #       docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:${{ github.sha }}
+  #       docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:latest
 
-        # Push both tags
-        docker push ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:${{ github.sha }}
-        docker push ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:latest
+  #       # Push both tags
+  #       docker push ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
+  #       docker push ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:latest
 
-  deploy:
-    needs: test-and-build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'  # Only deploy on main branch
+  # deploy:
+  #   needs: test-and-build
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'  # Only deploy on main branch
 
-    steps:
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+  #   steps:
+  #   - name: Azure Login
+  #     uses: azure/login@v1
+  #     with:
+  #       creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-    - name: Deploy to Azure Container Instances
-      uses: azure/aci-deploy@v1
-      with:
-        resource-group: ${{ fromJson(steps.config.outputs.data).azure.resource_group }}
-        dns-name-label: ${{ fromJson(steps.config.outputs.data).azure.container_instance_name }}
-        image: ${{ fromJson(steps.config.outputs.data).azure.container_registry }}/${{ github.repository }}:${{ github.sha }}
-        registry-username: ${{ secrets.AZURE_CLIENT_ID }}
-        registry-password: ${{ secrets.AZURE_CLIENT_SECRET }}
-        name: ${{ fromJson(steps.config.outputs.data).azure.container_instance_name }}
-        location: 'eastus'
+  #   - name: Deploy to Azure Container Instances
+  #     uses: azure/aci-deploy@v1
+  #     with:
+  #       resource-group: ${{ steps.config.outputs['azure_resource_group'] }}
+  #       dns-name-label: ${{ steps.config.outputs['azure_container_name'] }}
+  #       image: ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
+  #       registry-username: ${{ secrets.AZURE_CLIENT_ID }}
+  #       registry-password: ${{ secrets.AZURE_CLIENT_SECRET }}
+  #       name: ${{ steps.config.outputs['azure_container_name'] }}
+  #       location: 'eastus'
