@@ -53,13 +53,19 @@ jobs:
         username: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_ID }}
         password: ${{ secrets.SERVICE_PRINCIPAL_CLIENT_SECRET_ID }}
 
-    - name: Build with docker-compose
+    - name: Install Docker Compose
       run: |
-        docker-compose build
+        sudo mkdir -p /usr/local/lib/docker/cli-plugins
+        sudo curl -SL https://github.com/docker/compose/releases/download/v2.23.3/docker-compose-linux-x86_64 -o /usr/local/lib/docker/cli-plugins/docker-compose
+        sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+
+    - name: Build with docker compose
+      run: |
+        docker compose build
 
     - name: Run tests in container
       run: |
-        docker-compose run --rm app pytest tests/ --cov=./ --cov-report=xml
+        docker compose run --rm app pytest tests/ --cov=./ --cov-report=xml
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v3
@@ -69,34 +75,34 @@ jobs:
     - name: Tag and push Docker image
       run: |
         # Get the image name from docker-compose
-        IMAGE_NAME=$(docker-compose config | grep 'image:' | awk '{print $2}')
+        IMAGE_NAME=$(docker compose config | grep 'image:' | awk '{print $2}')
 
-  #       # Tag with Azure registry and commit SHA
-  #       docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:${{ github.sha }}
-  #       docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:latest
+        # Tag with Azure registry and commit SHA
+        docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:${{ github.sha }}
+        docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:latest
 
-  #       # Push both tags
-  #       docker push ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
-  #       docker push ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:latest
+        # Push both tags
+        docker push ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
+        docker push ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:latest
 
-  # deploy:
-  #   needs: test-and-build
-  #   runs-on: ubuntu-latest
-  #   if: github.ref == 'refs/heads/main'  # Only deploy on main branch
+  deploy:
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'  # Only deploy on main branch
 
-  #   steps:
-  #   - name: Azure Login
-  #     uses: azure/login@v1
-  #     with:
-  #       creds: ${{ secrets.AZURE_CREDENTIALS }}
+    steps:
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-  #   - name: Deploy to Azure Container Instances
-  #     uses: azure/aci-deploy@v1
-  #     with:
-  #       resource-group: ${{ steps.config.outputs['azure_resource_group'] }}
-  #       dns-name-label: ${{ steps.config.outputs['azure_container_name'] }}
-  #       image: ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
-  #       registry-username: ${{ secrets.AZURE_CLIENT_ID }}
-  #       registry-password: ${{ secrets.AZURE_CLIENT_SECRET }}
-  #       name: ${{ steps.config.outputs['azure_container_name'] }}
-  #       location: 'eastus'
+    - name: Deploy to Azure Container Instances
+      uses: azure/aci-deploy@v1
+      with:
+        resource-group: ${{ steps.config.outputs['azure_resource_group'] }}
+        dns-name-label: ${{ steps.config.outputs['azure_container_name'] }}
+        image: ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
+        registry-username: ${{ secrets.AZURE_CLIENT_ID }}
+        registry-password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        name: ${{ steps.config.outputs['azure_container_name'] }}
+        location: 'eastus'
