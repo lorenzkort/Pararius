@@ -15,6 +15,9 @@ jobs:
       with:
         fetch-depth: 0  # Required for pre-commit checks
 
+    - name: Debug YAML file content
+      run: cat ./config.yaml
+
     # Load the entire config file
     - name: Load full config
       id: config
