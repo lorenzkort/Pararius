@@ -65,7 +65,7 @@ jobs:
         TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         AZURE_TABLES_CONNECTION_STRING: ${{ secrets.AZURE_TABLES_CONNECTION_STRING }}
       run: |
-        docker compose build -d
+        docker compose build
 
     - name: Run tests in container
       run: |
