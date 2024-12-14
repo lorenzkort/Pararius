@@ -7,3 +7,5 @@ azure-data-tables
 apscheduler
 pre-commit
 psutil
+pytest
+pytest-cov
