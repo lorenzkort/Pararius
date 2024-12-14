@@ -81,13 +81,16 @@ jobs:
         # Get the image name from docker-compose
         IMAGE_NAME=$(docker compose config | grep 'image:' | awk '{print $2}')
 
+        # Convert the GitHub repository name to lowercase
+        REPO_NAME_LOWER=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+
         # Tag with Azure registry and commit SHA
-        docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:${{ github.sha }}
-        docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:latest
+        docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${REPO_NAME_LOWER}:${{ github.sha }}
+        docker tag $IMAGE_NAME ${{ steps.config.outputs['azure_container_registry'] }}/${REPO_NAME_LOWER}:latest
 
         # Push both tags
-        docker push ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
-        docker push ${{ steps.config.outputs['azure_container_registry'] }}/${{ github.repository }}:latest
+        docker push ${{ steps.config.outputs['azure_container_registry'] }}/${REPO_NAME_LOWER}:${{ github.sha }}
+        docker push ${{ steps.config.outputs['azure_container_registry'] }}/${REPO_NAME_LOWER}:latest
 
   deploy:
     needs: test-and-build
@@ -96,7 +99,7 @@ jobs:
 
     steps:
     - name: Azure Login
-      uses: azure/login@v1
+      uses: azure/login@v1.4.0
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
@@ -110,3 +113,9 @@ jobs:
         registry-password: ${{ secrets.AZURE_CLIENT_SECRET }}
         name: ${{ steps.config.outputs['azure_container_name'] }}
         location: 'eastus'
+    - name: Validate Deployment
+      run: |
+        az container show --name ${{ steps.config.outputs['azure_container_name'] }} \
+          --resource-group ${{ steps.config.outputs['azure_resource_group'] }} \
+          --query 'instanceView.state'
+        echo "Deployment validated successfully."
