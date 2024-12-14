@@ -1,5 +1,5 @@
 services:
-  scraper:
+  app:
     platform: linux/arm64
     image: parariusregistry.azurecr.io/pararius:latest
     build:
