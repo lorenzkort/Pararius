@@ -41,7 +41,6 @@ Scrapes Pararius rental objects, stores links in Azure Table Store and sends a T
 * Create CI/CD-process & think about OTAP-street for application (higher interval in OTA and lower in P (?) )
 * Check if line 8 in __init__.py can be removed
 * Surpress Response Header logging for Azure Tables Requests
-* ACR_URL -> find out single source of truth location
 
 * Update documentation
 * Write documentation about pre-commit hooks
