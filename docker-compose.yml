@@ -1,9 +1,7 @@
 services:
   scraper:
     platform: linux/arm64
-    image: ${ACR_URL}/${IMAGE_NAME}:${IMAGE_TAG}
-    env_file:
-      - .env
+    image: ${ACR_URL}/pararius:latest
     build:
       context: .
       dockerfile: Dockerfile

@@ -22,6 +22,11 @@ jobs:
       with:
         config: './config.yaml'
 
+    - name: Validate .env file
+      run: |
+        test -f .env
+        grep -q '=' .env
+
     - name: Show loaded configurations
       run: |
         # Accessing nested values using the full config
@@ -60,8 +65,12 @@ jobs:
         sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
     - name: Build with docker compose
+      env:
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        AZURE_TABLES_CONNECTION_STRING: ${{ secrets.AZURE_TABLES_CONNECTION_STRING }}
       run: |
-        docker compose build
+        docker compose build -d
 
     - name: Run tests in container
       run: |
