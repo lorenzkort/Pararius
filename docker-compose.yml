@@ -1,15 +1,11 @@
 services:
   scraper:
     platform: linux/arm64
-    image: ${ACR_URL}/pararius:latest
+    image: parariusregistry.azurecr.io/pararius:latest
     build:
       context: .
       dockerfile: Dockerfile
     init: true
-    environment:
-      - AZURE_TABLES_CONNECTION_STRING=${AZURE_TABLES_CONNECTION_STRING}
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
     security_opt:
       - seccomp=unconfined  # Required for Chrome in Docker
     shm_size: '2gb'
