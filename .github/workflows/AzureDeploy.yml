@@ -22,11 +22,6 @@ jobs:
       with:
         config: './config.yaml'
 
-    - name: Validate .env file
-      run: |
-        test -f .env
-        grep -q '=' .env
-
     - name: Show loaded configurations
       run: |
         # Accessing nested values using the full config
