@@ -144,6 +144,7 @@ jobs:
         registry-password: ${{ secrets.AZURE_CONTAINER_INSTANCE_PW }}
         name: ${{ steps.config.outputs['azure_container_name'] }}
         location: 'westus'
+        memory: 1G
 
     - name: Validate Deployment
       run: |
