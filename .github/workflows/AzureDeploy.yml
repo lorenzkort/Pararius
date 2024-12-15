@@ -33,6 +33,12 @@ jobs:
         echo "App Resource Group: ${{ steps.config.outputs.data['azure_resource_group'] }}"
         echo "ACR Container Name: ${{ steps.config.outputs.data['azure_container_name'] }}"
 
+    - name: Upload config.yaml as artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: config
+        path: config.yaml
+
     - name: Set up Python
       uses: actions/setup-python@v3
       with:
@@ -102,6 +108,12 @@ jobs:
     if: github.ref == 'refs/heads/main'  # Only deploy on main branch
 
     steps:
+    # Download the config.yaml artifact from the previous job
+    - name: Download config.yaml
+      uses: actions/download-artifact@v3
+      with:
+        name: config
+
     # Load the entire config file
     - name: Load full config
       id: config
@@ -127,6 +139,7 @@ jobs:
         registry-password: ${{ secrets.AZURE_CLIENT_SECRET }}
         name: ${{ steps.config.outputs['azure_container_name'] }}
         location: 'eastus'
+
     - name: Validate Deployment
       run: |
         az container show --name ${{ steps.config.outputs['azure_container_name'] }} \
