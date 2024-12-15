@@ -129,22 +129,14 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         enable-AzPSSession: false
 
-    # Check if the container group exists and delete it if necessary
-    - name: Delete existing container group (if exists)
-      run: |
-        az container show --name ${{ steps.config.outputs['azure_container_name'] }} \
-          --resource-group ${{ steps.config.outputs['azure_resource_group'] }} || exit 0
-        az container delete --name ${{ steps.config.outputs['azure_container_name'] }} \
-          --resource-group ${{ steps.config.outputs['azure_resource_group'] }} --yes
-
     - name: Deploy to Azure Container Instances
       uses: azure/aci-deploy@v1
       with:
         resource-group: ParariusScraper
         dns-name-label: ${{ steps.config.outputs['azure_container_name'] }}
         image: ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
-        registry-username: ${{ secrets.AZURE_CLIENT_ID }}
-        registry-password: ${{ secrets.AZURE_CLIENT_SECRET }}
+        registry-username: parariusregistry
+        registry-password: ${{ secrets.AZURE_CONTAINER_INSTANCE_PW }}
         name: ${{ steps.config.outputs['azure_container_name'] }}
         location: 'eastus'
 
