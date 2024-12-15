@@ -102,6 +102,13 @@ jobs:
     if: github.ref == 'refs/heads/main'  # Only deploy on main branch
 
     steps:
+    # Load the entire config file
+    - name: Load full config
+      id: config
+      uses: pietrobolcato/action-read-yaml@1.1.0
+      with:
+        config: './config.yaml'
+
     - name: Azure Login
       uses: azure/login@v1.4.0
       with:
