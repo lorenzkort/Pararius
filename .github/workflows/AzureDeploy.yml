@@ -11,6 +11,7 @@ permissions:
   contents: read
 
 jobs:
+  # 1. Testing and building step
   test-and-build:
     runs-on: ubuntu-latest
 
@@ -102,6 +103,7 @@ jobs:
         docker push ${{ steps.config.outputs['azure_container_registry'] }}/${REPO_NAME_LOWER}:${{ github.sha }}
         docker push ${{ steps.config.outputs['azure_container_registry'] }}/${REPO_NAME_LOWER}:latest
 
+  # 2. Deployment step
   deploy:
     needs: test-and-build
     runs-on: ubuntu-latest
@@ -129,10 +131,30 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         enable-AzPSSession: false
 
-
     - name: Convert repository name to lowercase
       id: repo-name
       run: echo "repo_name=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
+    # Ensure Log Analytics Workspace exists
+    - name: Ensure Log Analytics Workspace
+      run: |
+        workspace_name="${{ steps.config.outputs['log_analytics_workspace_name'] }}"
+        resource_group="${{ steps.config.outputs['azure_resource_group'] }}"
+
+        # Check if workspace exists
+        exists=$(az monitor log-analytics workspace list \
+          --resource-group "$resource_group" \
+          --query "[?name=='$workspace_name']" -o tsv)
+
+        if [[ -z "$exists" ]]; then
+          echo "Creating Log Analytics Workspace: $workspace_name"
+          az monitor log-analytics workspace create \
+            --resource-group "$resource_group" \
+            --workspace-name "$workspace_name" \
+            --location 'westus'
+        else
+          echo "Log Analytics Workspace $workspace_name already exists."
+        fi
 
     - name: Deploy to Azure Container Instances
       uses: azure/aci-deploy@v1
@@ -145,6 +167,10 @@ jobs:
         name: ${{ steps.config.outputs['azure_container_name'] }}
         location: 'westus'
         memory: 1G
+        environment-variables: |
+          LOG_ANALYTICS_WORKSPACE_ID=${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
+        log-analytics-workspace: ${{ steps.config.outputs['log_analytics_workspace_name'] }}
+        log-analytics-workspace-key: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
 
     - name: Validate Deployment
       run: |
@@ -176,4 +202,15 @@ jobs:
 
         echo "Deployment validated successfully. No errors found in logs."
 
+        # Validate Log Analytics Workspace connection
+        linked_workspace=$(az container show \
+          --name ${{ steps.config.outputs['azure_container_name'] }} \
+          --resource-group ${{ steps.config.outputs['azure_resource_group'] }} \
+          --query 'diagnostics.logAnalytics.workspaceId' -o tsv)
 
+        if [[ -z "$linked_workspace" ]]; then
+          echo "Error: No Log Analytics Workspace connected to the container instance."
+          exit 1
+        fi
+
+        echo "Log Analytics Workspace connected successfully."
