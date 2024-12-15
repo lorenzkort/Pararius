@@ -129,6 +129,14 @@ jobs:
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
         enable-AzPSSession: false
 
+    # Check if the container group exists and delete it if necessary
+    - name: Delete existing container group (if exists)
+      run: |
+        az container show --name ${{ steps.config.outputs['azure_container_name'] }} \
+          --resource-group ${{ steps.config.outputs['azure_resource_group'] }} || exit 0
+        az container delete --name ${{ steps.config.outputs['azure_container_name'] }} \
+          --resource-group ${{ steps.config.outputs['azure_resource_group'] }} --yes
+
     - name: Deploy to Azure Container Instances
       uses: azure/aci-deploy@v1
       with:
@@ -146,4 +154,3 @@ jobs:
           --resource-group ${{ steps.config.outputs['azure_resource_group'] }} \
           --query 'instanceView.state'
         echo "Deployment validated successfully."
-
