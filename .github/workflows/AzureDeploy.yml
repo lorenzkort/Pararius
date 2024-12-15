@@ -120,7 +120,7 @@ jobs:
     - name: Deploy to Azure Container Instances
       uses: azure/aci-deploy@v1
       with:
-        resource-group: ${{ steps.config.outputs['azure_resource_group'] }}
+        resource-group: ParariusScraper
         dns-name-label: ${{ steps.config.outputs['azure_container_name'] }}
         image: ${{ steps.config.outputs['azure_container_registry'] }}:${{ github.sha }}
         registry-username: ${{ secrets.AZURE_CLIENT_ID }}
