@@ -160,7 +160,7 @@ jobs:
         workspace_id=$(az monitor log-analytics workspace show \
           --resource-group "$resource_group" \
           --workspace-name "$workspace_name" \
-          --query "id" -o tsv)
+          --query "customerId" -o tsv)
 
         # Retrieve Workspace Key
         workspace_key=$(az monitor log-analytics workspace get-shared-keys \
@@ -188,6 +188,7 @@ jobs:
           TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
           AZURE_TABLES_CONNECTION_STRING=${{ secrets.AZURE_TABLES_CONNECTION_STRING }}
+          PYTHONUNBUFFERED=1
         log-analytics-workspace: ${{ steps.config.outputs['azure_log_analytics_workspace_name'] }}
         log-analytics-workspace-key: ${{ steps.log-analytics-workspace.outputs.workspace_key }}
 
