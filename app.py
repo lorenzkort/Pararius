@@ -267,7 +267,7 @@ class SchedulerManager:
 
 class ConfigManager:
     """Manages configuration with proper resource handling"""
-    def __init__(self, path: str = "config.yml"):
+    def __init__(self, path: str = "config.yaml"):
         self.path = path
         self.config: Dict[str, Any] = {}
         self._load_config()
