@@ -6,3 +6,4 @@ scrape_interval_in_minutes: 0.5
 azure_container_registry: "parariusregistry.azurecr.io"
 azure_resource_group: "ParariusScraper"
 azure_container_name: "parariuscontainer"
+azure_log_analytics_workspace_name: "law-pararius"
