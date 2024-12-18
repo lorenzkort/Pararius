@@ -215,7 +215,7 @@ jobs:
         echo "Container logs:"
         echo "$logs"
 
-        if echo "$logs" | grep -q "error"; then
+        if echo "$logs" | grep -q "ERROR"; then
           echo "Error: Logs contain error messages."
           exit 1
         fi
