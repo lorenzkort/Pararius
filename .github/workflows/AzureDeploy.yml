@@ -169,7 +169,7 @@ jobs:
         memory: 1G
         environment-variables: |
           LOG_ANALYTICS_WORKSPACE_ID=${{ secrets.LOG_ANALYTICS_WORKSPACE_ID }}
-        log-analytics-workspace: ${{ steps.config.outputs['log_analytics_workspace_name'] }}
+        log-analytics-workspace: ${{ steps.config.outputs['azure_log_analytics_workspace_name'] }}
         log-analytics-workspace-key: ${{ secrets.LOG_ANALYTICS_WORKSPACE_KEY }}
 
     - name: Validate Deployment
