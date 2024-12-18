@@ -185,6 +185,9 @@ jobs:
         memory: 1G
         environment-variables: |
           LOG_ANALYTICS_WORKSPACE_ID=${{ steps.log-analytics-workspace.outputs.workspace_id }}
+          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+          AZURE_TABLES_CONNECTION_STRING=${{ secrets.AZURE_TABLES_CONNECTION_STRING }}
         log-analytics-workspace: ${{ steps.config.outputs['azure_log_analytics_workspace_name'] }}
         log-analytics-workspace-key: ${{ steps.log-analytics-workspace.outputs.workspace_key }}
 
